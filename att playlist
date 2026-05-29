@@ -1,0 +1,252 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct No {
+    char nome[100];
+    int tocada;
+    struct No *prox;
+    struct No *ant;
+} No;
+
+void copiarTexto(char destino[], char origem[]) {
+    int i = 0;
+
+    while (origem[i] != '\0' && origem[i] != '\n' && i < 99) {
+        destino[i] = origem[i];
+        i++;
+    }
+
+    destino[i] = '\0';
+}
+
+void adicionarMusica(No **head, char *nome) {
+    No *nova = malloc(sizeof(No));
+
+    if (nova == NULL) {
+        printf("Erro ao alocar memoria.\n");
+        return;
+    }
+
+    copiarTexto(nova->nome, nome);
+    nova->tocada = 0;
+
+    if (*head == NULL) {
+        nova->prox = nova;
+        nova->ant = nova;
+        *head = nova;
+        return;
+    }
+
+    No *ultima = (*head)->ant;
+
+    nova->prox = *head;
+    nova->ant = ultima;
+    ultima->prox = nova;
+    (*head)->ant = nova;
+}
+
+void proximaMusica(No **atual) {
+    if (*atual == NULL) {
+        printf("Playlist vazia.\n");
+        return;
+    }
+
+    *atual = (*atual)->prox;
+    (*atual)->tocada = 1;
+
+    printf("Tocando agora: %s\n", (*atual)->nome);
+}
+
+void musicaAnterior(No **atual) {
+    if (*atual == NULL) {
+        printf("Playlist vazia.\n");
+        return;
+    }
+
+    *atual = (*atual)->ant;
+    (*atual)->tocada = 1;
+
+    printf("Tocando agora: %s\n", (*atual)->nome);
+}
+
+void exibirPlaylist(No *head) {
+    if (head == NULL) {
+        printf("Playlist vazia.\n");
+        return;
+    }
+
+    No *atual = head;
+
+    printf("\nPlaylist: ");
+
+    do {
+        printf("[%s] <-> ", atual->nome);
+        atual = atual->prox;
+    } while (atual != head);
+
+    printf("\n           ^");
+
+    atual = head;
+
+    do {
+        int i = 0;
+
+        while (atual->nome[i] != '\0') {
+            printf("_");
+            i++;
+        }
+
+        printf("______");
+        atual = atual->prox;
+    } while (atual != head);
+
+    printf("|\n");
+}
+
+int totalMusicas(No *head) {
+    if (head == NULL) {
+        return 0;
+    }
+
+    int total = 0;
+    No *atual = head;
+
+    do {
+        total++;
+        atual = atual->prox;
+    } while (atual != head);
+
+    return total;
+}
+
+int todasTocadas(No *head) {
+    if (head == NULL) {
+        return 0;
+    }
+
+    No *atual = head;
+
+    do {
+        if (atual->tocada == 0) {
+            return 0;
+        }
+
+        atual = atual->prox;
+    } while (atual != head);
+
+    return 1;
+}
+
+void resetarTocadas(No *head) {
+    if (head == NULL) {
+        return;
+    }
+
+    No *atual = head;
+
+    do {
+        atual->tocada = 0;
+        atual = atual->prox;
+    } while (atual != head);
+}
+
+void liberarPlaylist(No **head) {
+    if (*head == NULL) {
+        return;
+    }
+
+    No *inicio = *head;
+    No *atual = inicio->prox;
+    No *temp;
+
+    while (atual != inicio) {
+        temp = atual;
+        atual = atual->prox;
+        free(temp);
+    }
+
+    free(inicio);
+    *head = NULL;
+}
+
+int main() {
+    No *playlist = NULL;
+    No *atual = NULL;
+
+    int opcao;
+    char nome[100];
+
+    do {
+        printf("\n===== PLAYLIST SPOTIFY =====\n");
+        printf("1 - Adicionar musica\n");
+        printf("2 - Proxima musica\n");
+        printf("3 - Musica anterior\n");
+        printf("4 - Exibir playlist\n");
+        printf("5 - Total de musicas\n");
+        printf("6 - Resetar musicas tocadas\n");
+        printf("0 - Sair\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
+        getchar();
+
+        switch (opcao) {
+            case 1:
+                printf("Digite o nome da musica: ");
+                fgets(nome, 100, stdin);
+
+                adicionarMusica(&playlist, nome);
+
+                if (atual == NULL) {
+                    atual = playlist;
+                    atual->tocada = 1;
+                    printf("Tocando agora: %s\n", atual->nome);
+                }
+
+                printf("Musica adicionada com sucesso.\n");
+                break;
+
+            case 2:
+                if (todasTocadas(playlist)) {
+                    printf("Todas as musicas ja foram tocadas.\n");
+                    printf("Use a opcao 6 para resetar.\n");
+                } else {
+                    proximaMusica(&atual);
+                }
+                break;
+
+            case 3:
+                if (todasTocadas(playlist)) {
+                    printf("Todas as musicas ja foram tocadas.\n");
+                    printf("Use a opcao 6 para resetar.\n");
+                } else {
+                    musicaAnterior(&atual);
+                }
+                break;
+
+            case 4:
+                exibirPlaylist(playlist);
+                break;
+
+            case 5:
+                printf("Total de musicas: %d\n", totalMusicas(playlist));
+                break;
+
+            case 6:
+                resetarTocadas(playlist);
+                printf("Controle de tocadas resetado.\n");
+                break;
+
+            case 0:
+                printf("Encerrando...\n");
+                break;
+
+            default:
+                printf("Opcao invalida.\n");
+        }
+
+    } while (opcao != 0);
+
+    liberarPlaylist(&playlist);
+
+    return 0;
+}
